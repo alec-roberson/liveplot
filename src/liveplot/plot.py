@@ -36,6 +36,12 @@ class LivePlot:
     xdata: list[float]
     ydata: list[float]
 
+    # Handlers.
+    HANDLERS = {
+        "Close": "close",
+        "AddPoint": "add_point",
+    }
+
     def __init__(
         self,
         title: str,
@@ -133,14 +139,17 @@ class LivePlot:
         """
         Handle an incoming request.
         """
-        if isinstance(req, request.Close):
-            self.close()
-        elif isinstance(req, request.AddPoint):
-            self.add_point(req)
-        else:
+        # Use the dispatch table to find the appropriate handler.
+        handler_name = LivePlot.HANDLERS.get(type(req).__name__)
+        # Check if a handler was found.
+        if not handler_name:
+            # No handler found.
             PLOT_LOGGER.warning(f"Received unknown request type: {type(req).__name__}.")
             return False
-        return True
+        else:
+            # Call the appropriate handler.
+            self.__dict__[handler_name](req)
+            return True
 
     def close(self):
         """

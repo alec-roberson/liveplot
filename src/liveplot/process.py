@@ -46,21 +46,6 @@ class LivePlotProcess:
             )
             sys.exit(1)
 
-    def add_point(self, x: float, y: float):
-        """Add a point to the plot.
-
-        Args:
-            x: The x value of the point.
-            y: The y value of the point.
-        """
-        self.pipe.send(request.AddPoint(x, y))
-
-    def close(self):
-        """
-        Close the plot.
-        """
-        self.pipe.send(request.Close())
-
     def send_request(self, req: request.Request):
         """Send a generic request to the plot.
 
@@ -68,3 +53,19 @@ class LivePlotProcess:
             req: The request to send.
         """
         self.pipe.send(req)
+
+    def close(self):
+        """
+        Close the plot and terminate the process.
+        """
+        # Send the close request.
+        PROCESS_LOGGER.debug("Attempting to close plotting process.")
+        self.send_request(request.Close())
+        self._process.join(2)
+        # Check if the process is still alive.
+        if self._process.is_alive():
+            PROCESS_LOGGER.debug("Forcefully terminating plotting process.")
+            self._process.terminate()
+        # Make absolutely sure that the process is closed.
+        self._process.join()
+        PROCESS_LOGGER.debug("Plotting process closed.")
