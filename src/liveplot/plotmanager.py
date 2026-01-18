@@ -76,6 +76,8 @@ class BasicPlotManager(PlotManager):
         # Redraw the canvas.
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
+        # Layout the figure again.
+        self.fig.tight_layout()
 
 
 class BlitPlotManager(PlotManager):

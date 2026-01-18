@@ -1,3 +1,6 @@
+from collections.abc import Sequence
+
+
 class Request:
     """
     Base class for all requests.
@@ -25,3 +28,16 @@ class AddPoint(Request):
     def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
+
+
+class SetData(Request):
+    """
+    Request to set the trace data.
+    """
+
+    xdata: list[float]
+    ydata: list[float]
+
+    def __init__(self, xdata: Sequence[float], ydata: Sequence[float]):
+        self.xdata = list(xdata)
+        self.ydata = list(ydata)

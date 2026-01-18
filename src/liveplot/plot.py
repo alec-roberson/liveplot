@@ -40,6 +40,7 @@ class LivePlot:
     HANDLERS = {
         "Close": "close",
         "AddPoint": "add_point",
+        "SetData": "set_data",
     }
 
     def __init__(
@@ -103,6 +104,8 @@ class LivePlot:
             self.manager = BasicPlotManager(self.fig, self.ax)
         # Show the plot.
         plt.show(block=False)
+        # Layout the figure.
+        self.fig.tight_layout()
         # Mark as initialized.
         self.initialized = True
         PLOT_LOGGER.debug("LivePlot initialized.")
@@ -135,6 +138,22 @@ class LivePlot:
         # Update the plot.
         self.update()
 
+    def set_data(self, req: request.SetData):
+        """
+        Set the trace data.
+        """
+        # Set the data from the request.
+        self.xdata = req.xdata
+        self.ydata = req.ydata
+        # Update the plot.
+        self.update()
+
+    def close(self, _: request.Close):
+        """
+        Close the plot.
+        """
+        plt.close(self.fig)
+
     def handle_request(self, req: request.Request) -> bool:
         """
         Handle an incoming request.
@@ -148,14 +167,8 @@ class LivePlot:
             return False
         else:
             # Call the appropriate handler.
-            self.__dict__[handler_name](req)
+            getattr(self, handler_name)(req)
             return True
-
-    def close(self):
-        """
-        Close the plot.
-        """
-        plt.close(self.fig)
 
     def process(self, pipe: PipeConnection):
         """
