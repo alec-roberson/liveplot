@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "liveplot"
+version = "0.1.0"
+description = "Python package for socket-server based live plotting."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Alec Roberson", email = "alectroberson@gmail.com" }
+]
+dependencies = [
+    "matplotlib",
+    "ruff",
+    "numpy",
+    "filelock"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "pytest-cov",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+select = ["E", "F", "I", "B", "T"]
+ignore = ["E501"]
