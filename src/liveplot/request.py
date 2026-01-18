@@ -6,6 +6,14 @@ class Request:
     pass
 
 
+class Close(Request):
+    """
+    Request to close the plot.
+    """
+
+    pass
+
+
 class AddPoint(Request):
     """
     Request to add a point to the plot.
@@ -13,9 +21,7 @@ class AddPoint(Request):
 
     x: float
     y: float
-    trace: str | None
 
-    def __init__(self, x: float, y: float, trace: str | None = None):
+    def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
-        self.trace = trace

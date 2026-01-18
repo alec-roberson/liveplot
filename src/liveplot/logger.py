@@ -1,14 +1,64 @@
 import logging
 
+
+class ColorFormatter(logging.Formatter):
+    """
+    Custom logging formatter that adds color codes based on log level.
+    """
+
+    # Color codes.
+    dark_grey = "\x1b[90m"
+    grey = "\x1b[38;20m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+
+    def __init__(self, format=None):
+        # Initialize the base class.
+        super().__init__()
+
+        if format is None:
+            format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+
+        self.formatters = {
+            logging.DEBUG: logging.Formatter(
+                ColorFormatter.dark_grey + format + ColorFormatter.reset
+            ),
+            logging.INFO: logging.Formatter(
+                ColorFormatter.grey + format + ColorFormatter.reset
+            ),
+            logging.WARNING: logging.Formatter(
+                ColorFormatter.yellow + format + ColorFormatter.reset
+            ),
+            logging.ERROR: logging.Formatter(
+                ColorFormatter.red + format + ColorFormatter.reset
+            ),
+            logging.CRITICAL: logging.Formatter(
+                ColorFormatter.bold_red + format + ColorFormatter.reset
+            ),
+        }
+
+    def format(self, record):
+        return self.formatters[record.levelno].format(record)
+
+
 # Create a logger for the module.
 LOGGER = logging.getLogger("liveplot")
-LOGGER.setLevel(logging.INFO)
+LOGGER.setLevel(logging.WARNING)
 
 # Configure the stream handler.
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+formatter = ColorFormatter()
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 LOGGER.addHandler(handler)
+
+
+def info_mode():
+    """
+    Set the logger to info mode.
+    """
+    LOGGER.setLevel(logging.INFO)
 
 
 def debug_mode():
