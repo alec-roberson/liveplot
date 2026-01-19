@@ -1,7 +1,17 @@
 from collections.abc import Sequence
+from typing import NamedTuple
+
+REQUEST_HANDLERS = {
+    "AddPoint": "add_point",
+    "SetData": "set_data",
+    "Close": "close",
+}
+"""
+Dictionary mapping of request class names to ``LivePlot`` handler method names.
+"""
 
 
-class Request:
+class Request(NamedTuple):
     """
     Base class for all requests.
     """
@@ -18,26 +28,24 @@ class Close(Request):
 
 
 class AddPoint(Request):
-    """
-    Request to add a point to the plot.
+    """Request to add a point to the plot.
+
+    Args:
+        x (float): The x value.
+        y (float): The y value.
     """
 
     x: float
     y: float
 
-    def __init__(self, x: float, y: float):
-        self.x = x
-        self.y = y
-
 
 class SetData(Request):
-    """
-    Request to set the trace data.
+    """Request to set the trace data.
+
+    Args:
+        xdata (Sequence[float]): The x data.
+        ydata (Sequence[float]): The y data.
     """
 
-    xdata: list[float]
-    ydata: list[float]
-
-    def __init__(self, xdata: Sequence[float], ydata: Sequence[float]):
-        self.xdata = list(xdata)
-        self.ydata = list(ydata)
+    xdata: Sequence[float]
+    ydata: Sequence[float]
