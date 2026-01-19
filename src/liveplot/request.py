@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import NamedTuple
+from typing import NamedTuple, TypeAlias
 
 REQUEST_HANDLERS = {
     "AddPoint": "add_point",
@@ -11,23 +11,7 @@ Dictionary mapping of request class names to ``LivePlot`` handler method names.
 """
 
 
-class Request(NamedTuple):
-    """
-    Base class for all requests.
-    """
-
-    pass
-
-
-class Close(Request):
-    """
-    Request to close the plot.
-    """
-
-    pass
-
-
-class AddPoint(Request):
+class AddPoint(NamedTuple):
     """Request to add a point to the plot.
 
     Args:
@@ -39,7 +23,7 @@ class AddPoint(Request):
     y: float
 
 
-class SetData(Request):
+class SetData(NamedTuple):
     """Request to set the trace data.
 
     Args:
@@ -49,3 +33,14 @@ class SetData(Request):
 
     xdata: Sequence[float]
     ydata: Sequence[float]
+
+
+class Close(NamedTuple):
+    """
+    Request to close the plot.
+    """
+
+    pass
+
+
+Request: TypeAlias = AddPoint | SetData | Close

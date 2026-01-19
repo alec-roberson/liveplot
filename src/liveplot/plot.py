@@ -145,12 +145,14 @@ class LivePlot:
         """
         ...
 
-    def add_point(self, *args: request.AddPoint | float) -> None:
+    def add_point(
+        self, req_or_x: request.AddPoint | float, y: float | None = None
+    ) -> None:
         # Check which overload was used.
-        if len(args) == 2:
-            req = request.AddPoint(*args)
+        if y is not None:
+            req = request.AddPoint(req_or_x, y)
         else:
-            req = args[0]
+            req = req_or_x
         # Add the data from the request.
         self.xdata.append(req.x)
         self.ydata.append(req.y)
@@ -176,12 +178,16 @@ class LivePlot:
         """
         ...
 
-    def set_data(self, *args: request.SetData | Sequence[float]) -> None:
+    def set_data(
+        self,
+        req_or_xdata: request.SetData | Sequence[float],
+        ydata: Sequence[float] | None = None,
+    ) -> None:
         # Check which overload was used.
-        if len(args) == 2:
-            req = request.SetData(*args)
+        if ydata is not None:
+            req = request.SetData(req_or_xdata, ydata)
         else:
-            req = args[0]
+            req = req_or_xdata
         # Set the data from the request.
         self.xdata = list(req.xdata)
         self.ydata = list(req.ydata)
@@ -204,7 +210,7 @@ class LivePlot:
         """
         ...
 
-    def close(self, *args: request.Close) -> None:
+    def close(self, _: request.Close | None = None) -> None:
         # Doesn't matter which overload was used.
         PLOT_LOGGER.debug("Closing LivePlot.")
         plt.close(self.fig)
