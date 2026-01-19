@@ -2,9 +2,9 @@ from collections.abc import Sequence
 from typing import NamedTuple, TypeAlias
 
 REQUEST_HANDLERS = {
-    "AddPoint": "add_point",
-    "SetData": "set_data",
-    "Close": "close",
+    "AddPoint": "add_point_handler",
+    "SetData": "set_data_handler",
+    "Close": "close_handler",
 }
 """
 Dictionary mapping of request class names to ``LivePlot`` handler method names.

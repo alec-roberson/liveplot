@@ -1,6 +1,7 @@
 import multiprocessing as mp
 import sys
 from multiprocessing.connection import PipeConnection
+from typing import Sequence
 
 from liveplot import request
 from liveplot.logger import LOGGER
@@ -53,6 +54,24 @@ class LivePlotProcess:
             req: The request to send.
         """
         self.pipe.send(req)
+
+    def add_point(self, x: float, y: float):
+        """Add a point to the plot.
+
+        Args:
+            x (float): The x value of the point.
+            y (float): The y value of the point.
+        """
+        self.send_request(request.AddPoint(x, y))
+
+    def set_data(self, xdata: Sequence[float], ydata: Sequence[float]):
+        """Set the trace data.
+
+        Args:
+            xdata (Sequence[float]): The x data.
+            ydata (Sequence[float]): The y data.
+        """
+        self.send_request(request.SetData(xdata, ydata))
 
     def close(self):
         """

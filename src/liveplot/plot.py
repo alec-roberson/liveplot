@@ -1,5 +1,5 @@
 from multiprocessing.connection import PipeConnection
-from typing import Any, Sequence, overload
+from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 
@@ -126,49 +126,30 @@ class LivePlot:
         self.manager.update()
 
     # Request handling methods.
-    @overload
-    def add_point(self, req: request.AddPoint) -> None:
+    def add_point_handler(self, req: request.AddPoint) -> None:
         """Add a new point to the plot.
 
         Args:
             req (request.AddPoint): The add point request.
         """
-        ...
-
-    @overload
-    def add_point(self, x: float, y: float) -> None:
-        """Add a new point to the plot.
-
-        Args:
-            x (float): The x value.
-            y (float): The y value.
-        """
-        ...
-
-    def add_point(
-        self, req_or_x: request.AddPoint | float, y: float | None = None
-    ) -> None:
-        # Check which overload was used.
-        if y is not None:
-            req = request.AddPoint(req_or_x, y)
-        else:
-            req = req_or_x
         # Add the data from the request.
         self.xdata.append(req.x)
         self.ydata.append(req.y)
         # Update the plot.
         self.update()
 
-    @overload
-    def set_data(self, req: request.SetData) -> None:
+    def set_data_handler(self, req: request.SetData) -> None:
         """Set the trace data.
 
         Args:
             req (request.SetData): The set data request.
         """
-        ...
+        # Set the data from the request.
+        self.xdata = list(req.xdata)
+        self.ydata = list(req.ydata)
+        # Update the plot.
+        self.update()
 
-    @overload
     def set_data(self, xdata: Sequence[float], ydata: Sequence[float]) -> None:
         """Set the trace data.
 
@@ -176,44 +157,22 @@ class LivePlot:
             xdata (Sequence[float]): The x data.
             ydata (Sequence[float]): The y data.
         """
-        ...
+        self.set_data_handler(request.SetData(xdata, ydata))
 
-    def set_data(
-        self,
-        req_or_xdata: request.SetData | Sequence[float],
-        ydata: Sequence[float] | None = None,
-    ) -> None:
-        # Check which overload was used.
-        if ydata is not None:
-            req = request.SetData(req_or_xdata, ydata)
-        else:
-            req = req_or_xdata
-        # Set the data from the request.
-        self.xdata = list(req.xdata)
-        self.ydata = list(req.ydata)
-        # Update the plot.
-        self.update()
-
-    @overload
-    def close(self, req: request.Close) -> None:
+    def close_handler(self, _: request.Close) -> None:
         """Close the plot.
 
         Args:
             req (request.Close): The close request.
         """
-        ...
+        PLOT_LOGGER.debug("Closing LivePlot.")
+        plt.close(self.fig)
 
-    @overload
     def close(self) -> None:
         """
         Close the plot.
         """
-        ...
-
-    def close(self, _: request.Close | None = None) -> None:
-        # Doesn't matter which overload was used.
-        PLOT_LOGGER.debug("Closing LivePlot.")
-        plt.close(self.fig)
+        self.close_handler(request.Close())
 
     def handle_request(self, req: request.Request) -> bool:
         """Handle a request.
@@ -238,6 +197,17 @@ class LivePlot:
         # Call the appropriate handler.
         handler(req)
         return True
+
+    # Convenience functions.
+
+    def add_point(self, x: float, y: float) -> None:
+        """Add a new point to the plot.
+
+        Args:
+            x (float): The x value.
+            y (float): The y value.
+        """
+        self.add_point_handler(request.AddPoint(x, y))
 
     # Method for running within a separate process.
 
