@@ -1,5 +1,5 @@
 from multiprocessing.connection import PipeConnection
-from typing import Any
+from typing import Any, Sequence, overload
 
 import matplotlib.pyplot as plt
 
@@ -36,12 +36,7 @@ class LivePlot:
     xdata: list[float]
     ydata: list[float]
 
-    # Handlers.
-    HANDLERS = {
-        "Close": "close",
-        "AddPoint": "add_point",
-        "SetData": "set_data",
-    }
+    # Initialization methods.
 
     def __init__(
         self,
@@ -110,6 +105,8 @@ class LivePlot:
         self.initialized = True
         PLOT_LOGGER.debug("LivePlot initialized.")
 
+    # Updating method.
+
     def update(self):
         """
         Update the plot with new data.
@@ -128,52 +125,122 @@ class LivePlot:
         # Update the plot.
         self.manager.update()
 
-    def add_point(self, req: request.AddPoint):
+    # Request handling methods.
+    @overload
+    def add_point(self, req: request.AddPoint) -> None:
+        """Add a new point to the plot.
+
+        Args:
+            req (request.AddPoint): The add point request.
         """
-        Add a new point to the plot.
+        ...
+
+    @overload
+    def add_point(self, x: float, y: float) -> None:
+        """Add a new point to the plot.
+
+        Args:
+            x (float): The x value.
+            y (float): The y value.
         """
+        ...
+
+    def add_point(self, *args: request.AddPoint | float) -> None:
+        # Check which overload was used.
+        if len(args) == 2:
+            req = request.AddPoint(*args)
+        else:
+            req = args[0]
         # Add the data from the request.
         self.xdata.append(req.x)
         self.ydata.append(req.y)
         # Update the plot.
         self.update()
 
-    def set_data(self, req: request.SetData):
+    @overload
+    def set_data(self, req: request.SetData) -> None:
+        """Set the trace data.
+
+        Args:
+            req (request.SetData): The set data request.
         """
-        Set the trace data.
+        ...
+
+    @overload
+    def set_data(self, xdata: Sequence[float], ydata: Sequence[float]) -> None:
+        """Set the trace data.
+
+        Args:
+            xdata (Sequence[float]): The x data.
+            ydata (Sequence[float]): The y data.
         """
+        ...
+
+    def set_data(self, *args: request.SetData | Sequence[float]) -> None:
+        # Check which overload was used.
+        if len(args) == 2:
+            req = request.SetData(*args)
+        else:
+            req = args[0]
         # Set the data from the request.
-        self.xdata = req.xdata
-        self.ydata = req.ydata
+        self.xdata = list(req.xdata)
+        self.ydata = list(req.ydata)
         # Update the plot.
         self.update()
 
-    def close(self, _: request.Close):
+    @overload
+    def close(self, req: request.Close) -> None:
+        """Close the plot.
+
+        Args:
+            req (request.Close): The close request.
+        """
+        ...
+
+    @overload
+    def close(self) -> None:
         """
         Close the plot.
         """
+        ...
+
+    def close(self, *args: request.Close) -> None:
+        # Doesn't matter which overload was used.
+        PLOT_LOGGER.debug("Closing LivePlot.")
         plt.close(self.fig)
 
     def handle_request(self, req: request.Request) -> bool:
-        """
-        Handle an incoming request.
-        """
-        # Use the dispatch table to find the appropriate handler.
-        handler_name = LivePlot.HANDLERS.get(type(req).__name__)
-        # Check if a handler was found.
-        if not handler_name:
-            # No handler found.
-            PLOT_LOGGER.warning(f"Received unknown request type: {type(req).__name__}.")
-            return False
-        else:
-            # Call the appropriate handler.
-            getattr(self, handler_name)(req)
-            return True
+        """Handle a request.
 
-    def process(self, pipe: PipeConnection):
+        Args:
+            req (request.Request): The request to handle.
         """
-        Function to call within a seperate process to manage the plot through a
-        PipeConnection.
+        # Use the table to find the appropriate handler.
+        handler_name = request.REQUEST_HANDLERS.get(type(req).__name__, None)
+        # Check if a handler was found.
+        if handler_name is None:
+            # No handler found.
+            PLOT_LOGGER.warning(
+                f"No handler found for request of type {type(req).__name__}."
+            )
+            return False
+        # Get the handler
+        handler = getattr(self, handler_name, None)
+        if handler is None:
+            PLOT_LOGGER.warning(f"Handler method {handler_name} not found.")
+            return False
+        # Call the appropriate handler.
+        handler(req)
+        return True
+
+    # Method for running within a separate process.
+
+    def process(self, pipe: PipeConnection) -> None:
+        """Function to call within a seperate process to manage the plot
+        through a PipeConnection.
+
+        Args:
+            pipe (PipeConnection): The pipe connection to receive requests through.
         """
         PLOT_LOGGER.debug("Starting plotting process loop.")
         # Check that the plot has not already been initialized.
