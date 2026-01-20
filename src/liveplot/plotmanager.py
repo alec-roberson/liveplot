@@ -1,6 +1,6 @@
 from typing import Any
 
-import matplotlib as mpl
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from liveplot.logger import LOGGER
@@ -13,21 +13,21 @@ class PlotManager:
     Base class for plot managers.
     """
 
-    fig: mpl.figure.Figure
-    ax: mpl.axes.Axes
-    _artists: list[mpl.artist.Artist]
+    fig: plt.Figure
+    ax: plt.Axes
+    _artists: list[plt.Artist]
 
     def __init__(
         self,
-        fig: mpl.figure.Figure,
-        ax: mpl.axes.Axes,
+        fig: plt.Figure,
+        ax: plt.Axes,
     ):
         # Initialize all the instances variables.
         self.fig = fig
         self.ax = ax
         self._artists = []
 
-    def add_artist(self, artist: mpl.artist.Artist):
+    def add_artist(self, artist: plt.Artist):
         """
         Add an artist to the plot.
         """
@@ -36,7 +36,9 @@ class PlotManager:
             raise RuntimeError("Artist figure does not match PlotManager figure.")
         # Add to the list of artists.
         self._artists.append(artist)
-        self.ax.add_artist(artist)
+        # Check if the atrist is already on the axes before adding it.
+        if artist not in self.ax.artists:
+            self.ax.add_artist(artist)
 
     def update(self):
         """Update the plot.
@@ -54,8 +56,8 @@ class BasicPlotManager(PlotManager):
 
     def __init__(
         self,
-        fig: mpl.figure.Figure,
-        ax: mpl.axes.Axes,
+        fig: plt.Figure,
+        ax: plt.Axes,
     ):
         super().__init__(fig, ax)
         MANAGER_LOGGER.debug("Initialized BasicPlotManager.")
@@ -90,8 +92,8 @@ class BlitPlotManager(PlotManager):
 
     def __init__(
         self,
-        fig: mpl.figure.Figure,
-        ax: mpl.axes.Axes,
+        fig: plt.Figure,
+        ax: plt.Axes,
         animated_artists=(),
     ):
         super().__init__(fig, ax)
@@ -106,7 +108,7 @@ class BlitPlotManager(PlotManager):
         self.cid = self.canvas.mpl_connect("draw_event", self.on_draw)
         MANAGER_LOGGER.debug("Initialized BlitPlotManager.")
 
-    def add_artist(self, artist: mpl.artist.Artist):
+    def add_artist(self, artist: plt.Artist):
         """
         Add an artist and enable animation.
         """

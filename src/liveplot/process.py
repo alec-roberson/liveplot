@@ -1,27 +1,28 @@
 import multiprocessing as mp
 import sys
-from multiprocessing.connection import PipeConnection
+from multiprocessing.connection import Connection
 from typing import Sequence
 
 from liveplot import request
 from liveplot.logger import LOGGER
-from liveplot.plot import LivePlot
+from liveplot.plot import TraceLivePlot
 
 PROCESS_LOGGER = LOGGER.getChild("process")
 
 
-class LivePlotProcess:
-    """Class for managing a ``LivePlot`` instance within a seperate process.
+class TraceLivePlotProcess:
+    """Class for managing a ``TraceLivePlot`` instance within a seperate
+    process.
 
     Args:
-        plot: The ``LivePlot`` instance to manage. Note that this instance must be initialized with the argument ``initialize_plot=False``.
+        plot: The ``TraceLivePlot`` instance to manage. Note that this instance must be initialized with the argument ``initialize_plot=False``.
     """
 
-    plot: LivePlot
-    pipe: PipeConnection
+    plot: TraceLivePlot
+    pipe: Connection
     _process: mp.Process
 
-    def __init__(self, plot: LivePlot):
+    def __init__(self, plot: TraceLivePlot):
         # Save the plot instance.
         self.plot = plot
         self.pipe, plotter_pipe = mp.Pipe()

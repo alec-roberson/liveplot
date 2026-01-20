@@ -14,28 +14,28 @@ class ColorFormatter(logging.Formatter):
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
 
-    def __init__(self, format=None):
+    def __init__(self, fmt=None):
         # Initialize the base class.
         super().__init__()
 
-        if format is None:
-            format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+        if fmt is None:
+            fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
 
         self.formatters = {
             logging.DEBUG: logging.Formatter(
-                ColorFormatter.dark_grey + format + ColorFormatter.reset
+                ColorFormatter.dark_grey + fmt + ColorFormatter.reset
             ),
             logging.INFO: logging.Formatter(
-                ColorFormatter.grey + format + ColorFormatter.reset
+                ColorFormatter.grey + fmt + ColorFormatter.reset
             ),
             logging.WARNING: logging.Formatter(
-                ColorFormatter.yellow + format + ColorFormatter.reset
+                ColorFormatter.yellow + fmt + ColorFormatter.reset
             ),
             logging.ERROR: logging.Formatter(
-                ColorFormatter.red + format + ColorFormatter.reset
+                ColorFormatter.red + fmt + ColorFormatter.reset
             ),
             logging.CRITICAL: logging.Formatter(
-                ColorFormatter.bold_red + format + ColorFormatter.reset
+                ColorFormatter.bold_red + fmt + ColorFormatter.reset
             ),
         }
 

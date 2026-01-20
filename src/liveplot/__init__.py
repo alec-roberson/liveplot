@@ -1,14 +1,15 @@
 from liveplot.logger import debug_mode, info_mode
-from liveplot.plot import LivePlot
-from liveplot.process import LivePlotProcess
+from liveplot.plot import LivePlotBase, TraceLivePlot
+from liveplot.process import TraceLivePlotProcess
 from liveplot.request import AddPoint, Close, Request
 
 __all__ = [
-    "LivePlot",
+    "TraceLivePlot",
+    "LivePlotBase",
     "Request",
     "AddPoint",
     "Close",
     "debug_mode",
     "info_mode",
-    "LivePlotProcess",
+    "TraceLivePlotProcess",
 ]

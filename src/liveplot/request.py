@@ -40,7 +40,5 @@ class Close(NamedTuple):
     Request to close the plot.
     """
 
-    pass
-
 
 Request: TypeAlias = AddPoint | SetData | Close

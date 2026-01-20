@@ -1,11 +1,12 @@
 import time
 
 import numpy as np
-from liveplot import LivePlot, LivePlotProcess
+
+from liveplot import TraceLivePlot, TraceLivePlotProcess
 
 if __name__ == "__main__":
     # Initialize the plot.
-    plot = LivePlot(
+    plot = TraceLivePlot(
         "Example 1",
         xlabel="Time",
         ylabel="Voltage",
@@ -14,11 +15,11 @@ if __name__ == "__main__":
         ylim=(1.2, -1.2),
         grid=True,
         trace_kwargs={"color": "xkcd:red", "marker": "o", "fillstyle": "none"},
-        initialize_plot=False,  # You MUST set this to False when using LivePlot in a seperate process.
+        initialize_plot=False,  # You MUST set this to False when using TraceLivePlot in a seperate process.
     )
 
     # Create the plot process. This process will automaticall start upon initialization.
-    proc = LivePlotProcess(plot)
+    proc = TraceLivePlotProcess(plot)
 
     # Data to plot.
     x_data = np.linspace(0, 10, 1000)

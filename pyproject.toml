@@ -7,7 +7,7 @@ name = "liveplot"
 version = "0.1.0"
 description = "Python package for socket-server based live plotting."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<=3.13"
 authors = [
     { name = "Alec Roberson", email = "alectroberson@gmail.com" }
 ]
@@ -32,5 +32,5 @@ include-package-data = true
 where = ["src"]
 
 [tool.ruff]
-select = ["E", "F", "I", "B", "T"]
-ignore = ["E501"]
+lint.select = ["E", "F", "I", "B", "T"]
+lint.ignore = ["E501"]

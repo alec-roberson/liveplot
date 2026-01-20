@@ -1,4 +1,4 @@
-from multiprocessing.connection import PipeConnection
+from multiprocessing.connection import Connection
 from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
@@ -9,44 +9,72 @@ from liveplot.plotmanager import BasicPlotManager, BlitPlotManager, PlotManager
 
 PLOT_LOGGER = LOGGER.getChild("plot")
 
+DEFAULT_FIGSIZE = (6.0, 6.0)
 
-class LivePlot:
+
+class LivePlotBase:
     """
-    A live plot of a single trace that can have its data updated.
+    Base class for live plots.
     """
 
     # Matplotlib objects.
     fig: plt.Figure
+    """
+    Figure this live plot is on.
+    """
     ax: plt.Axes
-    line: plt.Line2D
+    """
+    Axes for this plot.
+    """
     manager: PlotManager
+    """
+    ``PlotManager`` managing the plot.
+    """
 
     # Basic plot info.
     title: str
+    """
+    Title of the plot.
+    """
     xlabel: str
+    """
+    Label for the x-axis.
+    """
     ylabel: str
+    """
+    Label for the y-axis.
+    """
     figsize: tuple[float, float]
+    """
+    Figure size.
+    """
     xlim: tuple[float, float] | None
+    """
+    Limits for the x-axis.
+    """
     ylim: tuple[float, float] | None
-    trace_kwargs: dict[str, Any]
+    """
+    Limits for the y-axis.
+    """
     grid: bool
+    """
+    Whether to show grid lines.
+    """
     initialized: bool
-
-    # Data for plotting.
-    xdata: list[float]
-    ydata: list[float]
+    """
+    Toggled to ``True`` when the plot is initialized.
+    """
 
     # Initialization methods.
 
     def __init__(
         self,
         title: str,
-        xlabel: str = "X",
-        ylabel: str = "Y",
-        figsize: tuple[float, float] = (8.0, 6.0),
+        xlabel: str = "x-label",
+        ylabel: str = "y-label",
+        figsize: tuple[float, float] = DEFAULT_FIGSIZE,
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
-        trace_kwargs: dict[str, Any] | None = None,
         grid: bool = True,
         initialize_plot: bool = True,
     ):
@@ -57,10 +85,7 @@ class LivePlot:
         self.figsize = figsize
         self.xlim = xlim
         self.ylim = ylim
-        self.trace_kwargs = trace_kwargs if trace_kwargs is not None else {}
         self.grid = grid
-        self.xdata = []
-        self.ydata = []
         self.initialized = False
         PLOT_LOGGER.debug(f"Created LivePlot object with title {self.title}.")
 
@@ -70,16 +95,15 @@ class LivePlot:
 
     def init_plot(self):
         """
-        Initialize the plot.
+        Initializes the plot.
         """
         # Check if already initialized.
         if self.initialized:
             PLOT_LOGGER.error("Attempted to initialize plot more than once.")
             raise RuntimeError("Plot is already initialized.")
+        # Initialize the figure.
         PLOT_LOGGER.debug("Initializing LivePlot.")
-        # Make the plot and add the line.
         self.fig, self.ax = plt.subplots(figsize=self.figsize)
-        (self.line,) = self.ax.plot(self.xdata, self.ydata, **self.trace_kwargs)
         # Set title and labels.
         self.ax.set_title(self.title)
         self.ax.set_xlabel(self.xlabel)
@@ -93,27 +117,26 @@ class LivePlot:
             self.ax.set_ylim(self.ylim)
         # Create the appropriate plot manager.
         if self.xlim is not None and self.ylim is not None:
+            # Use blitting manager for fixed axis limits.
             self.manager = BlitPlotManager(self.fig, self.ax)
-            self.manager.add_artist(self.line)
         else:
+            # If either limit is not defined, use the basic manager.
             self.manager = BasicPlotManager(self.fig, self.ax)
-        # Show the plot.
-        plt.show(block=False)
         # Layout the figure.
         self.fig.tight_layout()
+        # Show the plot.
+        plt.show(block=False)
         # Mark as initialized.
         self.initialized = True
+        # Log the initialization as complete.
         PLOT_LOGGER.debug("LivePlot initialized.")
 
     # Updating method.
 
     def update(self):
         """
-        Update the plot with new data.
+        Update the plot using the ``manager``.
         """
-        # Update trace data.
-        self.line.set_xdata(self.xdata)
-        self.line.set_ydata(self.ydata)
         # Recalculate limits if using basic manager.
         if isinstance(self.manager, BasicPlotManager):
             self.manager.relim()
@@ -122,10 +145,73 @@ class LivePlot:
                 self.ax.set_xlim(self.xlim)
             if self.ylim:
                 self.ax.set_ylim(self.ylim)
-        # Update the plot.
+        # Redraw/update the plot.
         self.manager.update()
 
+
+class TraceLivePlot(LivePlotBase):
+    """
+    A live plot with a single trace.
+    """
+
+    # Trace data.
+    line: plt.Line2D
+    """
+    Line2D artist for the trace.
+    """
+    trace_kwargs: dict[str, Any]
+    """
+    Keyword arguments for the trace artist.
+    """
+    xdata: list[float]
+    """
+    X data for the trace.
+    """
+    ydata: list[float]
+    """
+    Y data for the trace.
+    """
+
+    def __init__(
+        self,
+        title: str,
+        xlabel: str = "x-label",
+        ylabel: str = "y-label",
+        figsize: tuple[float, float] = DEFAULT_FIGSIZE,
+        xlim: tuple[float, float] | None = None,
+        ylim: tuple[float, float] | None = None,
+        grid: bool = True,
+        initialize_plot: bool = True,
+        trace_kwargs: dict[str, Any] | None = None,
+    ):
+        # Initialize the base class.
+        super().__init__(
+            title=title,
+            xlabel=xlabel,
+            ylabel=ylabel,
+            figsize=figsize,
+            xlim=xlim,
+            ylim=ylim,
+            grid=grid,
+            initialize_plot=initialize_plot,
+        )
+
+        # Initialize the trace data.
+        self.xdata = []
+        self.ydata = []
+        # Set trace keyword arguments.
+        self.trace_kwargs = trace_kwargs if trace_kwargs else {}
+
+        # Initialize the line artists.
+        (self.line,) = self.ax.plot(
+            self.xdata,
+            self.ydata,
+            **self.trace_kwargs,
+        )
+        self.manager.add_artist(self.line)
+
     # Request handling methods.
+
     def add_point_handler(self, req: request.AddPoint) -> None:
         """Add a new point to the plot.
 
@@ -135,8 +221,18 @@ class LivePlot:
         # Add the data from the request.
         self.xdata.append(req.x)
         self.ydata.append(req.y)
+        self.line.set_data(self.xdata, self.ydata)
         # Update the plot.
         self.update()
+
+    def add_point(self, x: float, y: float) -> None:
+        """Add a new point to the plot.
+
+        Args:
+            x (float): The x value.
+            y (float): The y value.
+        """
+        self.add_point_handler(request.AddPoint(x, y))
 
     def set_data_handler(self, req: request.SetData) -> None:
         """Set the trace data.
@@ -147,6 +243,7 @@ class LivePlot:
         # Set the data from the request.
         self.xdata = list(req.xdata)
         self.ydata = list(req.ydata)
+        self.line.set_data(self.xdata, self.ydata)
         # Update the plot.
         self.update()
 
@@ -174,6 +271,8 @@ class LivePlot:
         """
         self.close_handler(request.Close())
 
+    # Main request handler.
+
     def handle_request(self, req: request.Request) -> bool:
         """Handle a request.
 
@@ -198,20 +297,9 @@ class LivePlot:
         handler(req)
         return True
 
-    # Convenience functions.
-
-    def add_point(self, x: float, y: float) -> None:
-        """Add a new point to the plot.
-
-        Args:
-            x (float): The x value.
-            y (float): The y value.
-        """
-        self.add_point_handler(request.AddPoint(x, y))
-
     # Method for running within a separate process.
 
-    def process(self, pipe: PipeConnection) -> None:
+    def process(self, pipe: Connection) -> None:
         """Function to call within a seperate process to manage the plot
         through a PipeConnection.
 
