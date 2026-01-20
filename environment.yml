@@ -10,4 +10,5 @@ dependencies:
   - numpy
   - pytest
   - pre-commit
+  - pre-commit-hooks
   - ruff
