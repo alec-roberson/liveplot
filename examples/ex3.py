@@ -2,10 +2,10 @@ import time
 
 import numpy as np
 
-from liveplot import TraceLivePlot
+from liveplot import LivePlotTrace
 
 # Initialize the plot.
-plot = TraceLivePlot(
+plot = LivePlotTrace(
     "Example 1",
     xlabel="Time",
     ylabel="Voltage",

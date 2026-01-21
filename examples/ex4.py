@@ -2,11 +2,11 @@ import time
 
 import numpy as np
 
-from liveplot import TraceLivePlot, TraceLivePlotProcess
+from liveplot import LivePlotTrace, TraceLivePlotProcess
 
 if __name__ == "__main__":
     # Initialize the plot.
-    plot = TraceLivePlot(
+    plot = LivePlotTrace(
         "Example 1",
         xlabel="Time",
         ylabel="Voltage",

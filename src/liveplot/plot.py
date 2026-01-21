@@ -149,7 +149,7 @@ class LivePlotBase:
         self.manager.update()
 
 
-class TraceLivePlot(LivePlotBase):
+class LivePlotTrace(LivePlotBase):
     """
     A live plot with a single trace.
     """

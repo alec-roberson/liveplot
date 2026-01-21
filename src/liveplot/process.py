@@ -5,7 +5,7 @@ from typing import Sequence
 
 from liveplot import request
 from liveplot.logger import LOGGER
-from liveplot.plot import TraceLivePlot
+from liveplot.plot import LivePlotTrace
 
 PROCESS_LOGGER = LOGGER.getChild("process")
 
@@ -18,11 +18,11 @@ class TraceLivePlotProcess:
         plot: The ``TraceLivePlot`` instance to manage. Note that this instance must be initialized with the argument ``initialize_plot=False``.
     """
 
-    plot: TraceLivePlot
+    plot: LivePlotTrace
     pipe: Connection
     _process: mp.Process
 
-    def __init__(self, plot: TraceLivePlot):
+    def __init__(self, plot: LivePlotTrace):
         # Save the plot instance.
         self.plot = plot
         self.pipe, plotter_pipe = mp.Pipe()
