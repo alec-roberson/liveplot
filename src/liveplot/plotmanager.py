@@ -118,7 +118,7 @@ class BlitPlotManager(PlotManager):
     def on_draw(self, event):
         """Callback to register with "draw_event".
 
-        Grabs th background and draws all the artists.
+        Grabs the background and draws all the artists.
         """
         # Check the event canvas.
         if event is not None:
