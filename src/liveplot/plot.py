@@ -1,7 +1,10 @@
 from multiprocessing.connection import Connection
-from typing import Any, Sequence
+from typing import Any, Literal, Sequence
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
+import numpy.typing as npt
 
 from liveplot import request
 from liveplot.logger import LOGGER
@@ -126,6 +129,7 @@ class LivePlotBase:
         self.fig.tight_layout()
         # Show the plot.
         plt.show(block=False)
+        plt.pause(0.05)
         # Mark as initialized.
         self.initialized = True
         # Log the initialization as complete.
@@ -154,7 +158,6 @@ class LivePlotTrace(LivePlotBase):
     A live plot with a single trace.
     """
 
-    # Trace data.
     line: plt.Line2D
     """
     Line2D artist for the trace.
@@ -323,3 +326,165 @@ class LivePlotTrace(LivePlotBase):
                 PLOT_LOGGER.warning(
                     f"Plot process received unknown command type: {type(command).__name__}."
                 )
+
+
+class LivePlot2DWithColorBar(LivePlotBase):
+    """A live plot for 2D data.
+
+    This plot includes a dynamic color bar that will update as the image
+    data is updated.
+
+    This class assumes that the data is linearly spaced within the
+    specified x and y bounds.
+    """
+
+    img: mpl.image.AxesImage
+    """
+    The image object on the plot.
+    """
+    xlen: int
+    """
+    The length of the x-axis data.
+    """
+    ylen: int
+    """
+    The length of the y-axis data.
+    """
+    cmap: str
+    """
+    The colormap to use for the image.
+    """
+    img_data: npt.NDArray[np.float64]
+    """
+    The data for the image.
+    """
+    vmin: float | None
+    """
+    Minimum value for the color scale.
+    """
+    vmax: float | None
+    """
+    Maximum value for the color scale.
+    """
+    origin: Literal["upper", "lower"]
+    """
+    Origin parameter for the image.
+    """
+
+    def __init__(
+        self,
+        title: str,
+        xlen: int,
+        ylen: int,
+        xlabel: str = "x-label",
+        ylabel: str = "y-label",
+        cmap: str = "inferno",
+        xlim: tuple[float, float] | None = None,
+        ylim: tuple[float, float] | None = None,
+        figsize: tuple[float, float] = DEFAULT_FIGSIZE,
+        origin: Literal["upper", "lower"] = "lower",
+        initialize_plot: bool = True,
+    ):
+        # Save the instance variables.
+        self.xlen = xlen
+        self.ylen = ylen
+        self.cmap = cmap
+        self.vmin = None
+        self.vmax = None
+        self.origin = origin
+
+        # Require limits on the axes.
+        xlim = xlim if xlim else (0, xlen)
+        ylim = ylim if ylim else (0, ylen)
+
+        # Expand the limits to line up axes ticks.
+        x_step = np.abs(xlim[1] - xlim[0]) / xlen
+        y_step = np.abs(ylim[1] - ylim[0]) / ylen
+        xlim = (xlim[0] - x_step / 2, xlim[1] + x_step / 2)
+        ylim = (ylim[0] - y_step / 2, ylim[1] + y_step / 2)
+
+        # Initialize the base class.
+        super().__init__(
+            title=title,
+            xlabel=xlabel,
+            ylabel=ylabel,
+            figsize=figsize,
+            xlim=xlim,
+            ylim=ylim,
+            grid=False,  # No grid for image plots.
+            initialize_plot=initialize_plot,
+        )
+
+    def init_plot(self):
+        """
+        Initialize the plot.
+        """
+        # Run the base class init_plot.
+        super().init_plot()
+        # Delete the assigned plot manager and replace it with a BasicPlotManager.
+        del self.manager
+        self.manager = BasicPlotManager(self.fig, self.ax)
+        # Initialize image data.
+        self.img_data = np.zeros((self.ylen, self.xlen))
+        self.img_data[:] = np.nan
+        # Initialize the image.
+        self.img = self.ax.imshow(
+            self.img_data,
+            cmap=self.cmap,
+            extent=(*self.xlim, *self.ylim),
+            origin=self.origin,
+            aspect="auto",
+        )
+        # Set initial color limits (no data yet).
+        self.img.set_clim(vmin=-1, vmax=1)
+        # Add the colorbar.
+        self.cbar = self.fig.colorbar(self.img, ax=self.ax)
+        # Tight layout again to account for colorbar.
+        self.fig.tight_layout()
+
+    def update(self):
+        """
+        Update the plot.
+        """
+        # Update color limits based on data.
+        current_vmax = np.nanmax(self.img_data)
+        current_vmin = np.nanmin(self.img_data)
+
+        if self.vmax is None or self.vmax < current_vmax:
+            self.vmax = current_vmax
+        if self.vmin is None or self.vmin > current_vmin:
+            self.vmin = current_vmin
+
+        self.img.set_clim(
+            vmin=self.vmin,
+            vmax=self.vmax,
+        )
+
+        # Redraw/update the plot.
+        self.manager.update()
+
+    def set_data(self, data: npt.NDArray[np.float64], relim_cbar: bool = False) -> None:
+        """Set the image data for the plot.
+
+        Args:
+            data: The new image data.
+            relim_cbar: Whether to recalculate the colorbar limits completely. If ``False``, the existing limits will only be changed if they are exceeded by the new data.
+        """
+        # Copy the data and update the image.
+        self.img_data = np.copy(data)
+        self.img.set_data(self.img_data)
+
+        # Recalculate cbar limits if requested.
+        if relim_cbar:
+            self.vmax = np.nanmax(self.img_data)
+            self.vmin = np.nanmin(self.img_data)
+
+    def add_point(self, y: int, x: int, z: float) -> None:
+        """Add a point to the image data.
+
+        Args:
+            y: The y index of the point.
+            x: The x index of the point.
+            z: The value to set at the point.
+        """
+        self.img_data[y, x] = z
