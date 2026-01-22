@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 
-from liveplot import request
 from liveplot.logger import LOGGER
 from liveplot.plotmanager import BasicPlotManager, BlitPlotManager, PlotManager
 
@@ -109,20 +108,58 @@ class LivePlotBase:
         # Log the initialization as complete.
         PLOT_LOGGER.debug("LivePlot initialized.")
 
-    # Updating method.
-
+    # Base update method.
     def update(self):
         """Update the plot using the ``manager``."""
-        # Recalculate limits if using basic manager.
-        if isinstance(self.manager, BasicPlotManager):
-            self.manager.relim()
-            # Set any limits specified.
-            if self.xlim:
-                self.ax.set_xlim(self.xlim)
-            if self.ylim:
-                self.ax.set_ylim(self.ylim)
-        # Redraw/update the plot.
         self.manager.update()
+
+    # Methods for process handling.
+
+    def _call_method(self, func: str, *args: Any) -> None:
+        """Call a function on the plot instance.
+
+        This is intended to be used when the plot is being managed through a pipe in a separate process.
+        Args:
+            func: The name of the function to call.
+            *args: The arguments to pass to the function.
+        """
+        if not hasattr(self, func):
+            PLOT_LOGGER.error(
+                f"Attempted to call non-existent function '{func}' on LivePlot."
+            )
+            raise AttributeError(f"LivePlot has no function '{func}'.")
+        else:
+            method = getattr(self, func)
+            if not callable(method):
+                PLOT_LOGGER.error(
+                    f"Attempted to call non-callable attribute '{func}' on LivePlot."
+                )
+                raise AttributeError(f"LivePlot attribute '{func}' is not callable.")
+            method(*args)
+
+    def process(self, pipe: Connection) -> None:
+        """Function to call within a separate process to manage the plot
+        through a PipeConnection.
+
+        Args:
+            pipe (PipeConnection): The pipe connection to receive requests through. This pipe should receive tuples like ``(function_name: str, *args)``.
+        """
+        PLOT_LOGGER.debug("Starting plotting process loop.")
+        # Check that the plot has not already been initialized.
+        if self.initialized is True:
+            PLOT_LOGGER.error("Plot process called with already initialized plot.")
+            raise RuntimeError("Plot process called with already initialized plot.")
+        # Initialize the plot.
+        self.init_plot()
+        # Main loop to handle incoming requests.
+        while True:
+            if pipe.closed:
+                PLOT_LOGGER.debug("Pipe closed, exiting plotting process loop.")
+                break
+            else:
+                # Get the next function call.
+                func_call: tuple[Any, ...] | None = pipe.recv()
+                self._call_method(*func_call)
 
 
 class LivePlotTrace(LivePlotBase):
@@ -149,6 +186,13 @@ class LivePlotTrace(LivePlotBase):
         initialize_plot: bool = True,
         trace_kwargs: dict[str, Any] | None = None,
     ):
+        # Initialize the trace data.
+        self.xdata = []
+        self.ydata = []
+
+        # Set trace keyword arguments.
+        self.trace_kwargs = trace_kwargs if trace_kwargs else {}
+
         # Initialize the base class.
         super().__init__(
             title=title,
@@ -161,12 +205,10 @@ class LivePlotTrace(LivePlotBase):
             initialize_plot=initialize_plot,
         )
 
-        # Initialize the trace data.
-        self.xdata = []
-        self.ydata = []
-        # Set trace keyword arguments.
-        self.trace_kwargs = trace_kwargs if trace_kwargs else {}
-
+    def init_plot(self):
+        """Initialize the plot."""
+        # Run the base class init_plot.
+        super().init_plot()
         # Initialize the line artists.
         (self.line,) = self.ax.plot(
             self.xdata,
@@ -175,125 +217,57 @@ class LivePlotTrace(LivePlotBase):
         )
         self.manager.add_artist(self.line)
 
-    # Request handling methods.
+    # Methods for updating the plot.
 
-    def add_point_handler(self, req: request.AddPoint) -> None:
-        """Add a new point to the plot.
-
-        Args:
-            req (request.AddPoint): The add point request.
-        """
-        # Add the data from the request.
-        self.xdata.append(req.x)
-        self.ydata.append(req.y)
-        self.line.set_data(self.xdata, self.ydata)
-        # Update the plot.
-        self.update()
+    def update(self):
+        """Update the plot using the ``manager``."""
+        # Recalculate limits if using basic manager.
+        if isinstance(self.manager, BasicPlotManager):
+            self.manager.relim()
+            # Set any limits specified.
+            if self.xlim:
+                self.ax.set_xlim(self.xlim)
+            if self.ylim:
+                self.ax.set_ylim(self.ylim)
+        # Redraw/update the plot.
+        super().update()
 
     def add_point(self, x: float, y: float) -> None:
         """Add a new point to the plot.
 
         Args:
-            x (float): The x value.
-            y (float): The y value.
+            x: The x value.
+            y: The y value.
         """
-        self.add_point_handler(request.AddPoint(x, y))
-
-    def set_data_handler(self, req: request.SetData) -> None:
-        """Set the trace data.
-
-        Args:
-            req (request.SetData): The set data request.
-        """
-        # Set the data from the request.
-        self.xdata = list(req.xdata)
-        self.ydata = list(req.ydata)
+        self.xdata.append(x)
+        self.ydata.append(y)
         self.line.set_data(self.xdata, self.ydata)
-        # Update the plot.
         self.update()
 
     def set_data(self, xdata: Sequence[float], ydata: Sequence[float]) -> None:
         """Set the trace data.
 
         Args:
-            xdata (Sequence[float]): The x data.
-            ydata (Sequence[float]): The y data.
+            xdata: The x data.
+            ydata: The y data.
         """
-        self.set_data_handler(request.SetData(xdata, ydata))
-
-    def close_handler(self, _: request.Close) -> None:
-        """Close the plot.
-
-        Args:
-            req (request.Close): The close request.
-        """
-        PLOT_LOGGER.debug("Closing LivePlot.")
-        plt.close(self.fig)
+        self.xdata = list(xdata)
+        self.ydata = list(ydata)
+        self.line.set_data(self.xdata, self.ydata)
+        self.update()
 
     def close(self) -> None:
         """Close the plot."""
-        self.close_handler(request.Close())
-
-    # Main request handler.
-
-    def handle_request(self, req: request.Request) -> bool:
-        """Handle a request.
-
-        Args:
-            req (request.Request): The request to handle.
-        """
-        # Use the table to find the appropriate handler.
-        handler_name = request.REQUEST_HANDLERS.get(type(req).__name__, None)
-        # Check if a handler was found.
-        if handler_name is None:
-            # No handler found.
-            PLOT_LOGGER.warning(
-                f"No handler found for request of type {type(req).__name__}."
-            )
-            return False
-        # Get the handler
-        handler = getattr(self, handler_name, None)
-        if handler is None:
-            PLOT_LOGGER.warning(f"Handler method {handler_name} not found.")
-            return False
-        # Call the appropriate handler.
-        handler(req)
-        return True
-
-    # Method for running within a separate process.
-
-    def process(self, pipe: Connection) -> None:
-        """Function to call within a seperate process to manage the plot
-        through a PipeConnection.
-
-        Args:
-            pipe (PipeConnection): The pipe connection to receive requests through.
-        """
-        PLOT_LOGGER.debug("Starting plotting process loop.")
-        # Check that the plot has not already been initialized.
-        if self.initialized is True:
-            PLOT_LOGGER.error("Plot process called with already initialized plot.")
-        # Initialize the plot.
-        self.init_plot()
-        # Main loop to handle incoming requests.
-        while True:
-            command: Any = pipe.recv()
-            if isinstance(command, request.Request):
-                # Handle the request.
-                self.handle_request(command)
-            else:
-                # Warn the user.
-                PLOT_LOGGER.warning(
-                    f"Plot process received unknown command type: {type(command).__name__}."
-                )
+        PLOT_LOGGER.debug("Closing LivePlot.")
+        plt.close(self.fig)
 
 
-class LiveImageWithColorBar(LivePlotBase):
-    """A live plot for 2D data.
+class LivePlotImage(LivePlotBase):
+    """A LivePlot for 2D data.
 
     This class can only be used with data that is spaced on a regular grid.
 
-    This plot includes a dynamic color bar that will update as the image data is updated. By default, the color bar limits will extend to the maximum and minimum values _ever_ encountered in the data, but this can be reset by calling ``set_data`` with ``relim_cbar=True``.
+    The plot includes a dynamic color bar that will update as the image data is updated. By default, the color bar limits will extend to the maximum and minimum values _ever_ encountered in the data, but this can be reset by calling ``set_data`` with ``relim_cbar=True``.
     """
 
     img: mpl.image.AxesImage
@@ -306,9 +280,9 @@ class LiveImageWithColorBar(LivePlotBase):
     """The colormap to use for the image."""
     img_data: npt.NDArray[np.float64]
     """The data for the image."""
-    vmin: float | None
+    vmin: float
     """Minimum value for the color scale."""
-    vmax: float | None
+    vmax: float
     """Maximum value for the color scale."""
     origin: Literal["upper", "lower"]
     """Origin parameter for the image."""
@@ -331,8 +305,8 @@ class LiveImageWithColorBar(LivePlotBase):
         self.xlen = xlen
         self.ylen = ylen
         self.cmap = cmap
-        self.vmin = None
-        self.vmax = None
+        self.vmin = np.nan
+        self.vmax = np.nan
         self.origin = origin
 
         # Require limits on the axes.
@@ -376,11 +350,34 @@ class LiveImageWithColorBar(LivePlotBase):
             aspect="auto",
         )
         # Set initial color limits (no data yet).
-        self.img.set_clim(vmin=-1, vmax=1)
+        self.img.set_clim(vmin=-1.0, vmax=1.0)
         # Add the colorbar.
         self.cbar = self.fig.colorbar(self.img, ax=self.ax)
         # Tight layout again to account for colorbar.
         self.fig.tight_layout()
+
+    def _relim_cbar(self, update_only: bool = True) -> None:
+        """Recalculate the colorbar limits absolutely based on current data."""
+        if update_only:
+            # Get the current vmax/vmin.
+            current_vmax = np.nanmax(self.img_data)
+            current_vmin = np.nanmin(self.img_data)
+            # Only update if limits have not been set or have been exceeded.
+            if np.isnan(self.vmax) or self.vmax < current_vmax:
+                self.vmax = current_vmax
+            if np.isnan(self.vmin) or self.vmin > current_vmin:
+                self.vmin = current_vmin
+
+        else:
+            # Recalculate completely.
+            self.vmax = np.nanmax(self.img_data)
+            self.vmin = np.nanmin(self.img_data)
+
+        # Set the color limits for the image, ensuring they are not nan.
+        self.img.set_clim(
+            vmin=1.0 if np.isnan(self.vmax) else self.vmax,
+            vmax=-1.0 if np.isnan(self.vmin) else self.vmin,
+        )
 
     def update(self):
         """Update the plot."""
@@ -399,7 +396,7 @@ class LiveImageWithColorBar(LivePlotBase):
         )
 
         # Redraw/update the plot.
-        self.manager.update()
+        super().update()
 
     def set_data(self, data: npt.NDArray[np.float64], relim_cbar: bool = False) -> None:
         """Set the image data for the plot.
@@ -411,18 +408,23 @@ class LiveImageWithColorBar(LivePlotBase):
         # Copy the data and update the image.
         self.img_data = np.copy(data)
         self.img.set_data(self.img_data)
+        # Recalculate cbar limits.
+        self._relim_cbar(update_only=not relim_cbar)
+        # Update the plot.
+        self.update()
 
-        # Recalculate cbar limits if requested.
-        if relim_cbar:
-            self.vmax = np.nanmax(self.img_data)
-            self.vmin = np.nanmin(self.img_data)
-
-    def add_point(self, y: int, x: int, z: float) -> None:
+    def add_point(self, y: int, x: int, z: float, relim_cbar: bool = False) -> None:
         """Add a point to the image data.
 
         Args:
             y: The y index of the point.
             x: The x index of the point.
             z: The value to set at the point.
+            relim_cbar: Whether to recalculate the colorbar limits completely. If ``False``, the existing limits will only be changed if they are exceeded by the new data.
         """
+        # Set the pixel value in the data.
         self.img_data[y, x] = z
+        # Update the image data.
+        self.img.set_data(self.img_data)
+        # Recalculate cbar limits.
+        self._relim_cbar(update_only=not relim_cbar)

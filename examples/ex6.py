@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from liveplot import LivePlotImage
+from liveplot import LivePlotImage, LivePlotImageProcess
 
 np.random.seed(0)
 
@@ -22,19 +22,21 @@ def make_data(shape: tuple[int, int], pct_full: float):
     return flat_data.reshape(shape)
 
 
-plot = LivePlotImage(
-    title="heatmap example",
-    xlen=10,
-    ylen=10,
-    xlabel="my x-axis",
-    ylabel="my y-axis",
-    cmap="inferno",
-    xlim=(10, 100),
-    ylim=(0, 9),
-)
+if __name__ == "__main__":
+    plot = LivePlotImage(
+        title="heatmap example",
+        xlen=10,
+        ylen=10,
+        xlabel="my x-axis",
+        ylabel="my y-axis",
+        cmap="inferno",
+        xlim=(10, 100),
+        ylim=(0, 9),
+        initialize_plot=False,
+    )
 
+    proc = LivePlotImageProcess(plot)
 
-for pct in np.linspace(0.1, 0.9, 100):
-    plot.set_data(make_data((10, 10), pct))
-    plot.update()
-    time.sleep(0.01)
+    for pct in np.linspace(0.1, 0.9, 100):
+        proc.set_data(make_data((10, 10), pct))
+        time.sleep(0.01)

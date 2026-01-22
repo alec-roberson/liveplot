@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from liveplot import LivePlotTrace, TraceLivePlotProcess
+from liveplot import LivePlotTrace, LivePlotTraceProcess
 
 if __name__ == "__main__":
     # Initialize the plot.
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     )
 
     # Create the plot process. This process will automaticall start upon initialization.
-    proc = TraceLivePlotProcess(plot)
+    proc = LivePlotTraceProcess(plot)
 
     # Data to plot.
     x_data = np.linspace(0, 10, 1000)

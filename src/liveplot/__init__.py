@@ -1,7 +1,6 @@
 from liveplot.logger import debug_mode, info_mode
-from liveplot.plot import LivePlotBase, LivePlotTrace
-from liveplot.process import TraceLivePlotProcess
-from liveplot.request import AddPoint, Close, Request
+from liveplot.plot import LivePlotBase, LivePlotImage, LivePlotTrace
+from liveplot.process import LivePlotImageProcess, LivePlotProcess, LivePlotTraceProcess
 
 __all__ = [
     "LivePlotTrace",
@@ -11,5 +10,8 @@ __all__ = [
     "Close",
     "debug_mode",
     "info_mode",
-    "TraceLivePlotProcess",
+    "LivePlotProcess",
+    "LivePlotTraceProcess",
+    "LivePlotImageProcess",
+    "LivePlotImage",
 ]
