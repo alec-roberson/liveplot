@@ -9,9 +9,7 @@ MANAGER_LOGGER = LOGGER.getChild("manager")
 
 
 class PlotManager:
-    """
-    Base class for plot managers.
-    """
+    """Base class for plot managers."""
 
     fig: plt.Figure
     ax: plt.Axes
@@ -28,9 +26,7 @@ class PlotManager:
         self._artists = []
 
     def add_artist(self, artist: plt.Artist):
-        """
-        Add an artist to the plot.
-        """
+        """Add an artist to the plot."""
         # Check figure.
         if artist.figure != self.fig:
             raise RuntimeError("Artist figure does not match PlotManager figure.")
@@ -49,10 +45,8 @@ class PlotManager:
 
 
 class BasicPlotManager(PlotManager):
-    """
-    A basic plot manager that redraws the entire plot every time there is an
-    update.
-    """
+    """A basic plot manager that redraws the entire plot every time there is an
+    update."""
 
     def __init__(
         self,
@@ -63,17 +57,13 @@ class BasicPlotManager(PlotManager):
         MANAGER_LOGGER.debug("Initialized BasicPlotManager.")
 
     def relim(self):
-        """
-        Recalculate limits based on current artists.
-        """
+        """Recalculate limits based on current artists."""
         MANAGER_LOGGER.debug("Recalculating axis limits.")
         self.ax.relim()
         self.ax.autoscale_view()
 
     def update(self):
-        """
-        Redraw the canvas and flush events.
-        """
+        """Redraw the canvas and flush events."""
         MANAGER_LOGGER.debug("Redrawing the plot.")
         # Redraw the canvas.
         self.fig.canvas.draw()
@@ -83,9 +73,7 @@ class BasicPlotManager(PlotManager):
 
 
 class BlitPlotManager(PlotManager):
-    """
-    A plot manager that uses blitting to optimize redraws.
-    """
+    """A plot manager that uses blitting to optimize redraws."""
 
     canvas: FigureCanvasAgg
     _bg: None | Any
@@ -109,9 +97,7 @@ class BlitPlotManager(PlotManager):
         MANAGER_LOGGER.debug("Initialized BlitPlotManager.")
 
     def add_artist(self, artist: plt.Artist):
-        """
-        Add an artist and enable animation.
-        """
+        """Add an artist and enable animation."""
         artist.set_animated(True)
         super().add_artist(artist)
 
@@ -131,16 +117,12 @@ class BlitPlotManager(PlotManager):
         self._draw_animated()
 
     def _draw_animated(self):
-        """
-        Draw all animated artists.
-        """
+        """Draw all animated artists."""
         for a in self._artists:
             self.ax.draw_artist(a)
 
     def update(self):
-        """
-        Update the animated artists via blitting.
-        """
+        """Update the animated artists via blitting."""
         # Paranoia in case we missed the draw event.
         if self._bg is None:
             self.on_draw(None)

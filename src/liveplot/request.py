@@ -6,9 +6,8 @@ REQUEST_HANDLERS = {
     "SetData": "set_data_handler",
     "Close": "close_handler",
 }
-"""
-Dictionary mapping of request class names to ``LivePlot`` handler method names.
-"""
+"""Dictionary mapping of request class names to ``LivePlot`` handler method
+names."""
 
 
 class AddPoint(NamedTuple):
@@ -36,9 +35,7 @@ class SetData(NamedTuple):
 
 
 class Close(NamedTuple):
-    """
-    Request to close the plot.
-    """
+    """Request to close the plot."""
 
 
 Request: TypeAlias = AddPoint | SetData | Close

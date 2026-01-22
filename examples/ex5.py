@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from liveplot.plot import LivePlot2DWithColorBar
+from liveplot.plot import LiveImageWithColorBar
 
 np.random.seed(0)
 
@@ -22,7 +22,7 @@ def make_data(shape: tuple[int, int], pct_full: float):
     return flat_data.reshape(shape)
 
 
-plot = LivePlot2DWithColorBar(
+plot = LiveImageWithColorBar(
     title="heatmap example",
     xlen=10,
     ylen=10,

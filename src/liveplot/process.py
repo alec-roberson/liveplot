@@ -75,9 +75,7 @@ class TraceLivePlotProcess:
         self.send_request(request.SetData(xdata, ydata))
 
     def close(self):
-        """
-        Close the plot and terminate the process.
-        """
+        """Close the plot and terminate the process."""
         # Send the close request.
         PROCESS_LOGGER.debug("Attempting to close plotting process.")
         self.send_request(request.Close())

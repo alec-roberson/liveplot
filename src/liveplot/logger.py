@@ -2,9 +2,7 @@ import logging
 
 
 class ColorFormatter(logging.Formatter):
-    """
-    Custom logging formatter that adds color codes based on log level.
-    """
+    """Custom logging formatter that adds color codes based on log level."""
 
     # Color codes.
     dark_grey = "\x1b[90m"
@@ -55,23 +53,17 @@ LOGGER.addHandler(handler)
 
 
 def info_mode():
-    """
-    Set the logger to info mode.
-    """
+    """Set the logger to info mode."""
     LOGGER.setLevel(logging.INFO)
 
 
 def debug_mode():
-    """
-    Set the logger to debug mode.
-    """
+    """Set the logger to debug mode."""
     LOGGER.setLevel(logging.DEBUG)
 
 
 def log_to_file(file_path: str):
-    """
-    Add a file handler to log messages to a specified file.
-    """
+    """Add a file handler to log messages to a specified file."""
     file_handler = logging.FileHandler(file_path)
     file_handler.setFormatter(formatter)
     LOGGER.addHandler(file_handler)

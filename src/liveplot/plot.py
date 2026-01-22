@@ -16,57 +16,33 @@ DEFAULT_FIGSIZE = (6.0, 6.0)
 
 
 class LivePlotBase:
-    """
-    Base class for live plots.
-    """
+    """Base class for live plots."""
 
     # Matplotlib objects.
     fig: plt.Figure
-    """
-    Figure this live plot is on.
-    """
+    """Figure this live plot is on."""
     ax: plt.Axes
-    """
-    Axes for this plot.
-    """
+    """Axes for this plot."""
     manager: PlotManager
-    """
-    ``PlotManager`` managing the plot.
-    """
+    """``PlotManager`` managing the plot."""
 
     # Basic plot info.
     title: str
-    """
-    Title of the plot.
-    """
+    """Title of the plot."""
     xlabel: str
-    """
-    Label for the x-axis.
-    """
+    """Label for the x-axis."""
     ylabel: str
-    """
-    Label for the y-axis.
-    """
+    """Label for the y-axis."""
     figsize: tuple[float, float]
-    """
-    Figure size.
-    """
+    """Figure size."""
     xlim: tuple[float, float] | None
-    """
-    Limits for the x-axis.
-    """
+    """Limits for the x-axis."""
     ylim: tuple[float, float] | None
-    """
-    Limits for the y-axis.
-    """
+    """Limits for the y-axis."""
     grid: bool
-    """
-    Whether to show grid lines.
-    """
+    """Whether to show grid lines."""
     initialized: bool
-    """
-    Toggled to ``True`` when the plot is initialized.
-    """
+    """Toggled to ``True`` when the plot is initialized."""
 
     # Initialization methods.
 
@@ -97,9 +73,7 @@ class LivePlotBase:
             self.init_plot()
 
     def init_plot(self):
-        """
-        Initializes the plot.
-        """
+        """Initializes the plot."""
         # Check if already initialized.
         if self.initialized:
             PLOT_LOGGER.error("Attempted to initialize plot more than once.")
@@ -138,9 +112,7 @@ class LivePlotBase:
     # Updating method.
 
     def update(self):
-        """
-        Update the plot using the ``manager``.
-        """
+        """Update the plot using the ``manager``."""
         # Recalculate limits if using basic manager.
         if isinstance(self.manager, BasicPlotManager):
             self.manager.relim()
@@ -154,26 +126,16 @@ class LivePlotBase:
 
 
 class LivePlotTrace(LivePlotBase):
-    """
-    A live plot with a single trace.
-    """
+    """A live plot with a single trace."""
 
     line: plt.Line2D
-    """
-    Line2D artist for the trace.
-    """
+    """Line2D artist for the trace."""
     trace_kwargs: dict[str, Any]
-    """
-    Keyword arguments for the trace artist.
-    """
+    """Keyword arguments for the trace artist."""
     xdata: list[float]
-    """
-    X data for the trace.
-    """
+    """X data for the trace."""
     ydata: list[float]
-    """
-    Y data for the trace.
-    """
+    """Y data for the trace."""
 
     def __init__(
         self,
@@ -269,9 +231,7 @@ class LivePlotTrace(LivePlotBase):
         plt.close(self.fig)
 
     def close(self) -> None:
-        """
-        Close the plot.
-        """
+        """Close the plot."""
         self.close_handler(request.Close())
 
     # Main request handler.
@@ -328,48 +288,30 @@ class LivePlotTrace(LivePlotBase):
                 )
 
 
-class LivePlot2DWithColorBar(LivePlotBase):
+class LiveImageWithColorBar(LivePlotBase):
     """A live plot for 2D data.
 
-    This plot includes a dynamic color bar that will update as the image
-    data is updated.
+    This class can only be used with data that is spaced on a regular grid.
 
-    This class assumes that the data is linearly spaced within the
-    specified x and y bounds.
+    This plot includes a dynamic color bar that will update as the image data is updated. By default, the color bar limits will extend to the maximum and minimum values _ever_ encountered in the data, but this can be reset by calling ``set_data`` with ``relim_cbar=True``.
     """
 
     img: mpl.image.AxesImage
-    """
-    The image object on the plot.
-    """
+    """The image object on the plot."""
     xlen: int
-    """
-    The length of the x-axis data.
-    """
+    """The length of the x-axis data."""
     ylen: int
-    """
-    The length of the y-axis data.
-    """
+    """The length of the y-axis data."""
     cmap: str
-    """
-    The colormap to use for the image.
-    """
+    """The colormap to use for the image."""
     img_data: npt.NDArray[np.float64]
-    """
-    The data for the image.
-    """
+    """The data for the image."""
     vmin: float | None
-    """
-    Minimum value for the color scale.
-    """
+    """Minimum value for the color scale."""
     vmax: float | None
-    """
-    Maximum value for the color scale.
-    """
+    """Maximum value for the color scale."""
     origin: Literal["upper", "lower"]
-    """
-    Origin parameter for the image.
-    """
+    """Origin parameter for the image."""
 
     def __init__(
         self,
@@ -416,9 +358,7 @@ class LivePlot2DWithColorBar(LivePlotBase):
         )
 
     def init_plot(self):
-        """
-        Initialize the plot.
-        """
+        """Initialize the plot."""
         # Run the base class init_plot.
         super().init_plot()
         # Delete the assigned plot manager and replace it with a BasicPlotManager.
@@ -443,9 +383,7 @@ class LivePlot2DWithColorBar(LivePlotBase):
         self.fig.tight_layout()
 
     def update(self):
-        """
-        Update the plot.
-        """
+        """Update the plot."""
         # Update color limits based on data.
         current_vmax = np.nanmax(self.img_data)
         current_vmin = np.nanmin(self.img_data)
