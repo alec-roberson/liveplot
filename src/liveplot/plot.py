@@ -6,15 +6,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 
-from liveplot.logger import LOGGER
-from liveplot.plotmanager import BasicPlotManager, BlitPlotManager, PlotManager
+from .logger import LOGGER
+from .plotmanager import BasicPlotManager, BlitPlotManager, PlotManager
 
 PLOT_LOGGER = LOGGER.getChild("plot")
 
 DEFAULT_FIGSIZE = (6.0, 6.0)
 
 
-class LivePlotBase:
+class LivePlot:
     """Base class for live plots."""
 
     # Matplotlib objects.
@@ -162,7 +162,7 @@ class LivePlotBase:
                 self._call_method(*func_call)
 
 
-class LivePlotTrace(LivePlotBase):
+class LivePlotTrace(LivePlot):
     """A live plot with a single trace."""
 
     line: plt.Line2D
@@ -262,7 +262,7 @@ class LivePlotTrace(LivePlotBase):
         plt.close(self.fig)
 
 
-class LivePlotImage(LivePlotBase):
+class LivePlotImage(LivePlot):
     """A LivePlot for 2D data.
 
     This class can only be used with data that is spaced on a regular grid.

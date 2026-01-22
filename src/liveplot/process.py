@@ -1,3 +1,5 @@
+"""Submodule for managing ``LivePlot`` objects via multiprocessing."""
+
 import multiprocessing as mp
 import sys
 from multiprocessing.connection import Connection
@@ -6,28 +8,28 @@ from typing import Sequence
 import numpy as np
 import numpy.typing as npt
 
-from liveplot.logger import LOGGER
-from liveplot.plot import LivePlotBase  # LivePlotImage
+from .logger import LOGGER
+from .plot import LivePlot
 
 PROCESS_LOGGER = LOGGER.getChild("process")
 
 
 class LivePlotProcess:
-    """Class for managing an instance of ``LivePlotBase`` within a separate
+    """Class for managing an instance of ``LivePlot`` within a separate
     process. The seperate process is started upon initialization of this class.
     After intiialization, any method calls to this instance will be forwarded
-    to the ``LivePlotBase`` via a pipe connection and the ``_call_method``
+    to the ``LivePlot`` via a pipe connection and the ``_call_method``
     function.
 
     Args:
-        plot: The ``LivePlotBase`` instance to manage. Note that this instance must be initialized with the argument ``initialize_plot=False``.
+        plot: The ``LivePlot`` instance to manage. Note that this instance must be initialized with the argument ``initialize_plot=False``.
     """
 
-    plot: LivePlotBase
+    plot: LivePlot
     pipe: Connection
     _process: mp.Process
 
-    def __init__(self, plot: LivePlotBase):
+    def __init__(self, plot: LivePlot):
         # Save the plot instance.
         self.plot = plot
         self.pipe, plotter_pipe = mp.Pipe()

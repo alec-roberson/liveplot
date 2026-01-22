@@ -3,7 +3,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-from liveplot.logger import LOGGER
+from .logger import LOGGER
 
 MANAGER_LOGGER = LOGGER.getChild("manager")
 
